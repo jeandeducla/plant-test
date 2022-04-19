@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -24,6 +25,7 @@ func (s *Server) Router() {
 
     router.GET("/ems", s.handleReadEnergyManagers)
     router.GET("/ems/:id", s.handleReadEnergyManager)
+    router.DELETE("/ems/:id", s.handleDeleteEnergyManager)
 
     router.Run()
 }
@@ -46,13 +48,31 @@ func (s *Server) handleReadEnergyManager(ctx *gin.Context) {
     }
     
     res, err := s.plantsService.GetEnergyManager(uint(id))
-    if err != nil {
+    if errors.Is(err, plants.ErrEmptyResult) {
+        ctx.AbortWithStatus(404)
+        return
+    } else if err != nil {
         ctx.AbortWithStatus(500)
         return
     }
-    if res == nil {
+    ctx.JSON(http.StatusOK, res)
+}
+
+func (s *Server) handleDeleteEnergyManager(ctx *gin.Context) {
+    param := ctx.Param("id")
+    id, err := strconv.ParseUint(param, 0, 64)
+    if err != nil {
         ctx.AbortWithStatus(404)
         return
     }
-    ctx.JSON(http.StatusOK, res)
+
+    err = s.plantsService.DeleteEnergyManager(uint(id))
+    if errors.Is(err, plants.ErrEmptyResult) {
+        ctx.AbortWithStatus(404)
+        return
+    } else if err != nil {
+        ctx.AbortWithStatus(500)
+        return
+    }
+    ctx.String(http.StatusOK, "")
 }

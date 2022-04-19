@@ -19,3 +19,7 @@ func (s *Service) GetAllEnergyManagers() ([]models.EnergyManager, error) {
 func (s *Service) GetEnergyManager(id uint) (*models.EnergyManager, error) {
     return s.DB.GetEnergyManagerById(id)
 }
+
+func (s *Service) DeleteEnergyManager(id uint) error {
+    return s.DB.DeleteEnergyManagerById(id)
+}

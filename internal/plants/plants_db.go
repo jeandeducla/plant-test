@@ -1,8 +1,14 @@
 package plants
 
 import (
+	"errors"
+
 	"github.com/jeandeducla/api-plant/internal/models"
 	"gorm.io/gorm"
+)
+
+var (
+    ErrEmptyResult = errors.New("Empty result")
 )
 
 type PlantsDB struct  {
@@ -28,8 +34,18 @@ func (db *PlantsDB) GetEnergyManagerById(id uint) (*models.EnergyManager, error)
         return nil, result.Error
     }
     if result.RowsAffected == 0 {
-        return nil, nil
+        return nil, ErrEmptyResult
     }
     return &em, nil
 }
     
+func (db *PlantsDB) DeleteEnergyManagerById(id uint) error {
+    result := db.gorm.Delete(&models.EnergyManager{}, id)
+    if result.Error != nil {
+        return result.Error
+    }
+    if result.RowsAffected == 0 {
+        return ErrEmptyResult
+    }
+    return nil
+}
