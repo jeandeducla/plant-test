@@ -1,20 +1,22 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
-
-	"github.com/gin-gonic/gin"
+	"github.com/jeandeducla/api-plant/internal/models"
+	"github.com/jeandeducla/api-plant/internal/server"
 )
 
 func main() {
-    fmt.Println("Coucou")
+    config := NewConfig()
 
-    router := gin.Default()
+    db, err := models.NewDB(config.dsn)
+    if err != nil {
+        panic(err)
+    }
 
-    router.GET("/", func(ctx *gin.Context) {
-        ctx.JSON(http.StatusOK, gin.H{"data": "coucou"})
-    })
+    server, err := server.NewServer(db)
+    if err != nil {
+        panic(err)
+    }
 
-    router.Run()
+    server.Router()
 }
