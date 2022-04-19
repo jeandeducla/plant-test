@@ -11,7 +11,7 @@ func NewDB(dsn string) (*gorm.DB, error) {
         return nil, err
     }
 
-    db.AutoMigrate(Plants{})
+    db.AutoMigrate(EnergyManager{}, Plant{}, Asset{})
 
     return db, nil
 }
