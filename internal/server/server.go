@@ -24,6 +24,7 @@ func (s *Server) Router() {
     router := gin.Default()
 
     router.GET("/ems", s.handleReadEnergyManagers)
+    router.POST("/ems", s.handleCreateEnergyManager)
     router.GET("/ems/:id", s.handleReadEnergyManager)
     router.DELETE("/ems/:id", s.handleDeleteEnergyManager)
 
@@ -67,6 +68,24 @@ func (s *Server) handleDeleteEnergyManager(ctx *gin.Context) {
     }
 
     err = s.plantsService.DeleteEnergyManager(uint(id))
+    if errors.Is(err, plants.ErrEmptyResult) {
+        ctx.AbortWithStatus(404)
+        return
+    } else if err != nil {
+        ctx.AbortWithStatus(500)
+        return
+    }
+    ctx.String(http.StatusOK, "")
+}
+
+func (s *Server) handleCreateEnergyManager(ctx *gin.Context) {
+    var input plants.CreateEnergyManagerInput
+    if err := ctx.ShouldBindJSON(&input); err != nil {
+        ctx.String(http.StatusBadRequest, "")
+        return
+    }
+
+    err := s.plantsService.CreateEnergyManager(input)
     if errors.Is(err, plants.ErrEmptyResult) {
         ctx.AbortWithStatus(404)
         return

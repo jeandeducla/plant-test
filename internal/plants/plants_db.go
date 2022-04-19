@@ -27,6 +27,17 @@ func (db *PlantsDB) GetAllEnergyManagers() ([]models.EnergyManager, error) {
     return ems, nil
 }
 
+func (db *PlantsDB) CreateEnergyManager(em *models.EnergyManager) error {
+    result := db.gorm.Create(em)
+    if result.Error != nil {
+        return result.Error
+    }
+    if result.RowsAffected == 0 {
+        return ErrEmptyResult
+    }
+    return nil
+}
+
 func (db *PlantsDB) GetEnergyManagerById(id uint) (*models.EnergyManager, error) {
     var em models.EnergyManager
     result := db.gorm.Find(&em, id)
