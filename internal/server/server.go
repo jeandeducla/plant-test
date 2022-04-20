@@ -23,16 +23,16 @@ func NewServer(plantsService *plants.Service) (*Server, error) {
 func (s *Server) Router() {
     router := gin.Default()
 
-    router.GET("/ems", s.handleReadEnergyManagers)
-    router.POST("/ems", s.handleCreateEnergyManager)
-    router.GET("/ems/:id", s.handleReadEnergyManager)
+    router.GET("/ems", s.handleGetEnergyManagers)
+    router.POST("/ems", s.handlePostEnergyManager)
+    router.GET("/ems/:id", s.handleGetEnergyManager)
     router.DELETE("/ems/:id", s.handleDeleteEnergyManager)
-    router.PUT("/ems/:id", s.handleUpdateEnergyManager)
+    router.PUT("/ems/:id", s.handlePutEnergyManager)
 
     router.Run()
 }
 
-func (s *Server) handleReadEnergyManagers(ctx *gin.Context) {
+func (s *Server) handleGetEnergyManagers(ctx *gin.Context) {
     res, err := s.plantsService.GetAllEnergyManagers()
     if err != nil {
         ctx.AbortWithStatus(500)
@@ -41,7 +41,7 @@ func (s *Server) handleReadEnergyManagers(ctx *gin.Context) {
     ctx.JSON(http.StatusOK, res)
 }
 
-func (s *Server) handleReadEnergyManager(ctx *gin.Context) {
+func (s *Server) handleGetEnergyManager(ctx *gin.Context) {
     param := ctx.Param("id")
     id, err := strconv.ParseUint(param, 0, 64)
     if err != nil {
@@ -79,7 +79,7 @@ func (s *Server) handleDeleteEnergyManager(ctx *gin.Context) {
     ctx.String(http.StatusOK, "")
 }
 
-func (s *Server) handleCreateEnergyManager(ctx *gin.Context) {
+func (s *Server) handlePostEnergyManager(ctx *gin.Context) {
     var input plants.CreateEnergyManagerInput
     if err := ctx.ShouldBindJSON(&input); err != nil {
         ctx.String(http.StatusBadRequest, "")
@@ -97,7 +97,7 @@ func (s *Server) handleCreateEnergyManager(ctx *gin.Context) {
     ctx.String(http.StatusOK, "")
 }
 
-func (s *Server) handleUpdateEnergyManager(ctx *gin.Context) {
+func (s *Server) handlePutEnergyManager(ctx *gin.Context) {
     param := ctx.Param("id")
     id, err := strconv.ParseUint(param, 0, 64)
     if err != nil {
