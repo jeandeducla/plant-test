@@ -60,3 +60,14 @@ func (db *PlantsDB) DeleteEnergyManagerById(id uint) error {
     }
     return nil
 }
+
+func (db *PlantsDB) UpdateEnergyManager(em *models.EnergyManager) error {
+    result := db.gorm.Model(em).Updates(em)
+    if result.Error != nil {
+        return result.Error
+    }
+    if result.RowsAffected == 0 {
+        return ErrEmptyResult
+    }
+    return nil
+}

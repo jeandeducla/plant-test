@@ -36,3 +36,18 @@ func (s *Service) GetEnergyManager(id uint) (*models.EnergyManager, error) {
 func (s *Service) DeleteEnergyManager(id uint) error {
     return s.DB.DeleteEnergyManagerById(id)
 }
+
+type UpdateEnergyManagerInput struct {
+    Name    string `json:"name" binding:"required"`
+    Surname string `json:"surname" binding:"required"`
+}
+
+func (s *Service) UpdateEnergyManager(id uint, input UpdateEnergyManagerInput) error {
+    em, err := s.DB.GetEnergyManagerById(id)
+    if err != nil {
+        return err
+    }
+    em.Name = input.Name
+    em.Surname = input.Surname
+    return s.DB.UpdateEnergyManager(em)
+}
