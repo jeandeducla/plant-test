@@ -32,6 +32,21 @@ func (s *Server) Router() *gin.Engine {
     return router
 }
 
+func parseId(ctx *gin.Context) (uint, error) {
+    param := ctx.Param("id")
+    id, err := strconv.ParseUint(param, 0, 64)
+    return uint(id), err
+}
+
+func matchError(err error) (int, error) {
+    if errors.Is(err, plants.ErrEmptyResult) {
+        return 404, err
+    } else if err != nil {
+        return 500, err
+    }
+    return 0, nil
+}
+
 func (s *Server) handleGetEnergyManagers(ctx *gin.Context) {
     res, err := s.plantsService.GetAllEnergyManagers()
     if err != nil {
@@ -42,38 +57,32 @@ func (s *Server) handleGetEnergyManagers(ctx *gin.Context) {
 }
 
 func (s *Server) handleGetEnergyManager(ctx *gin.Context) {
-    param := ctx.Param("id")
-    id, err := strconv.ParseUint(param, 0, 64)
+    id, err := parseId(ctx)
     if err != nil {
         ctx.AbortWithStatus(404)
         return
     }
     
-    res, err := s.plantsService.GetEnergyManager(uint(id))
-    if errors.Is(err, plants.ErrEmptyResult) {
-        ctx.AbortWithStatus(404)
-        return
-    } else if err != nil {
-        ctx.AbortWithStatus(500)
+    res, err := s.plantsService.GetEnergyManager(id)
+    status, err := matchError(err)
+    if err != nil {
+        ctx.AbortWithStatus(status)
         return
     }
     ctx.JSON(http.StatusOK, res)
 }
 
 func (s *Server) handleDeleteEnergyManager(ctx *gin.Context) {
-    param := ctx.Param("id")
-    id, err := strconv.ParseUint(param, 0, 64)
+    id, err := parseId(ctx)
     if err != nil {
         ctx.AbortWithStatus(404)
         return
     }
 
-    err = s.plantsService.DeleteEnergyManager(uint(id))
-    if errors.Is(err, plants.ErrEmptyResult) {
-        ctx.AbortWithStatus(404)
-        return
-    } else if err != nil {
-        ctx.AbortWithStatus(500)
+    err = s.plantsService.DeleteEnergyManager(id)
+    status, err := matchError(err)
+    if err != nil {
+        ctx.AbortWithStatus(status)
         return
     }
     ctx.String(http.StatusOK, "")
@@ -87,19 +96,16 @@ func (s *Server) handlePostEnergyManager(ctx *gin.Context) {
     }
 
     err := s.plantsService.CreateEnergyManager(input)
-    if errors.Is(err, plants.ErrEmptyResult) {
-        ctx.AbortWithStatus(404)
-        return
-    } else if err != nil {
-        ctx.AbortWithStatus(500)
+    status, err := matchError(err)
+    if err != nil {
+        ctx.AbortWithStatus(status)
         return
     }
     ctx.String(http.StatusOK, "")
 }
 
 func (s *Server) handlePutEnergyManager(ctx *gin.Context) {
-    param := ctx.Param("id")
-    id, err := strconv.ParseUint(param, 0, 64)
+    id, err := parseId(ctx)
     if err != nil {
         ctx.AbortWithStatus(404)
         return
@@ -111,14 +117,12 @@ func (s *Server) handlePutEnergyManager(ctx *gin.Context) {
         return
     }
 
-    err = s.plantsService.UpdateEnergyManager(uint(id), input)
-    if errors.Is(err, plants.ErrEmptyResult) {
-        ctx.AbortWithStatus(404)
-        return
-    } else if err != nil {
-        ctx.AbortWithStatus(500)
+    err = s.plantsService.UpdateEnergyManager(id, input)
+    status, err := matchError(err)
+    if err != nil {
+        ctx.AbortWithStatus(status)
         return
     }
     ctx.String(http.StatusOK, "")
-
 }
+
