@@ -11,16 +11,16 @@ import (
 )
 
 type Server struct {
-    plantsService *plants.Service
+    plantsService plants.ServiceInterface
 }
 
-func NewServer(plantsService *plants.Service) (*Server, error) {
+func NewServer(plantsService plants.ServiceInterface) (*Server, error) {
     return &Server{
         plantsService: plantsService,
     }, nil
 }
 
-func (s *Server) Router() {
+func (s *Server) Router() *gin.Engine {
     router := gin.Default()
 
     router.GET("/ems", s.handleGetEnergyManagers)
@@ -29,7 +29,7 @@ func (s *Server) Router() {
     router.DELETE("/ems/:id", s.handleDeleteEnergyManager)
     router.PUT("/ems/:id", s.handlePutEnergyManager)
 
-    router.Run()
+    return router
 }
 
 func (s *Server) handleGetEnergyManagers(ctx *gin.Context) {

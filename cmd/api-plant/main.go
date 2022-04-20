@@ -27,5 +27,5 @@ func main() {
         panic(err)
     }
 
-    server.Router()
+    server.Router().Run()
 }

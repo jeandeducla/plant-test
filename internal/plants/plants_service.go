@@ -4,6 +4,14 @@ import (
 	"github.com/jeandeducla/api-plant/internal/models"
 )
 
+type ServiceInterface interface {
+    GetAllEnergyManagers() ([]models.EnergyManager, error)
+    CreateEnergyManager(input CreateEnergyManagerInput) error
+    GetEnergyManager(id uint) (*models.EnergyManager, error)
+    DeleteEnergyManager(id uint) error
+    UpdateEnergyManager(id uint, input UpdateEnergyManagerInput) error
+}
+
 type Service struct {
     DB *PlantsDB
 }
