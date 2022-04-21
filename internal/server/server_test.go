@@ -86,6 +86,32 @@ func (sm *ServiceMocker) UpdateEnergyManager(id uint, input plants.UpdateEnergyM
     return nil
 }
 
+func (sm *ServiceMocker) GetEnergyManagerPlants(id uint) ([]models.Plant, error) {
+    return nil, nil
+}
+
+
+func (sm *ServiceMocker) GetAllPlants() ([]models.Plant, error) {
+    return nil, nil
+}
+
+func (sm *ServiceMocker) CreatePlant(input plants.CreatePlantInput) error {
+    return nil
+}
+
+func (sm *ServiceMocker) GetPlant(id uint) (*models.Plant, error) {
+    return nil, nil
+}
+
+func (sm *ServiceMocker) DeletePlant(id uint) error {
+    return nil
+}
+
+func (sm *ServiceMocker) UpdatePlant(id uint, input plants.UpdatePlantInput) error {
+    return nil
+}
+
+
 func (t *MainTestSuite) SetupTest() {
     // re-initialize mock db
     server, err := NewServer(&ServiceMocker{db: map[uint]models.EnergyManager{

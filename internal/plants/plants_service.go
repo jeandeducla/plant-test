@@ -10,6 +10,14 @@ type ServiceInterface interface {
     GetEnergyManager(id uint) (*models.EnergyManager, error)
     DeleteEnergyManager(id uint) error
     UpdateEnergyManager(id uint, input UpdateEnergyManagerInput) error
+
+    GetEnergyManagerPlants(id uint) ([]models.Plant, error)
+
+    GetAllPlants() ([]models.Plant, error)
+    CreatePlant(input CreatePlantInput) error
+    GetPlant(id uint) (*models.Plant, error)
+    DeletePlant(id uint) error
+    UpdatePlant(id uint input UpdatePlantInput) error
 }
 
 type Service struct {
@@ -46,7 +54,7 @@ func (s *Service) DeleteEnergyManager(id uint) error {
 }
 
 type UpdateEnergyManagerInput struct {
-    Name    string `json:"name" binding:"required"`
+    Name    string `json:"name"    binding:"required"`
     Surname string `json:"surname" binding:"required"`
 }
 
@@ -58,4 +66,63 @@ func (s *Service) UpdateEnergyManager(id uint, input UpdateEnergyManagerInput) e
     em.Name = input.Name
     em.Surname = input.Surname
     return s.DB.UpdateEnergyManager(em)
+}
+
+func (s *Service) GetEnergyManagerPlants(id uint) ([]models.Plant, error) {
+    if _, err := s.DB.GetEnergyManagerById(id); err != nil {
+        return nil, err
+    }
+    return s.DB.GetPlantsByEnergyManagerId(id)
+}
+
+func (s *Service) GetAllPlants() ([]models.Plant, error) {
+    return s.DB.GetAllPlants()
+}
+
+type CreatePlantInput struct {
+    Name            string `json:"name"              binding:"required"`
+    Address         string `json:"address"           binding:"required"`
+    MaxPower        uint   `json:"max_power"         binding:"required"`
+    EnergyManagerID uint   `json:"energy_manager_id" binding:"required"`
+}
+
+func (s *Service) CreatePlant(input CreatePlantInput) error {
+    if _, err := s.DB.GetEnergyManagerById(input.EnergyManagerID); err != nil {
+        return err
+    }
+    return s.DB.CreatePlant(&models.Plant{
+        Name: input.Name,
+        Address: input.Address,
+        MaxPower: input.MaxPower,
+        EnergyManagerID: input.EnergyManagerID,
+    })
+}
+
+func (s *Service) GetPlant(id uint) (*models.Plant, error) {
+    return s.DB.GetPlantById(id)
+}
+
+func (s *Service) DeletePlant(id uint) error {
+    return s.DB.DeletePlantById(id)
+}
+
+type UpdatePlantInput struct {
+    Name            string `json:"name"              binding:"required"`
+    Address         string `json:"address"           binding:"required"`
+    MaxPower        uint   `json:"max_power"         binding:"required"`
+    EnergyManagerID uint   `json:"energy_manager_id" binding:"required"`
+}
+
+func (s *Service) UpdatePlant(id uint, input UpdatePlantInput) error {
+    plant, err := s.DB.GetPlantById(id)
+    if err != nil {
+        return err
+    }
+    plant.Name = input.Name
+    plant.Address = input.Address
+    // TODO: validate that the sum of asset power still is lower than the new MaxPower, otherwise error
+    plant.MaxPower = input.MaxPower
+    // TODO: validate that the new EnergyManagerID is valid? (maybe we want to allow to set it to a null value, like detaching a plant from a EM?)
+    plant.EnergyManagerID = input.EnergyManagerID
+    return s.DB.UpdatePlant(plant)
 }
