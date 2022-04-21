@@ -36,6 +36,9 @@ func (s *Server) Router() *gin.Engine {
     router.DELETE("/plants/:id", s.handleDeletePlant)
     router.PUT("/plants/:id", s.handlePutPlant)
 
+    router.GET("/plants/:id/assets", s.handleGetPlantAssets)
+    router.POST("/plants/:id/assets", s.handlePostAsset)
+
     return router
 }
 

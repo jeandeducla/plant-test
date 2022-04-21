@@ -25,6 +25,9 @@ type DB interface {
     UpdatePlant(plant *models.Plant) error
 
     GetPlantsByEnergyManagerId(id uint) ([]models.Plant, error)
+
+    GetAssetsByPlantId(id uint) ([]models.Asset, error)
+    CreateAsset(asset *models.Asset) error
 }
 
 type PlantsDB struct  {
@@ -151,4 +154,27 @@ func (db *PlantsDB) GetPlantsByEnergyManagerId(id uint) ([]models.Plant, error) 
         return nil, ErrEmptyResult
     }
     return plants, nil
+}
+
+func (db *PlantsDB) GetAssetsByPlantId(id uint) ([]models.Asset, error) {
+    var assets []models.Asset
+    result := db.gorm.Where("plant_id = ?", id).Find(&assets)
+    if result.Error != nil {
+        return nil, result.Error
+    }
+    if result.RowsAffected == 0 {
+        return nil, ErrEmptyResult
+    }
+    return assets, nil
+}
+
+func (db *PlantsDB) CreateAsset(asset *models.Asset) error {
+    result := db.gorm.Create(asset)
+    if result.Error != nil {
+        return result.Error
+    }
+    if result.RowsAffected == 0 {
+        return ErrEmptyResult
+    }
+    return nil
 }

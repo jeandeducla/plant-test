@@ -1,8 +1,23 @@
 package plants
 
 import (
+	"errors"
+
 	"github.com/jeandeducla/api-plant/internal/models"
 )
+
+var (
+    ErrAssetPower = errors.New("Asset MaxPower is too big for the plant")
+    ErrAssetType = errors.New("Asset Type must be one of 'furnace', 'compressor', 'chiller' or 'rolling mill'")
+)
+
+func sumAssetPower(assets []models.Asset) uint {
+    var sum uint
+    for _, asset := range assets {
+        sum += asset.MaxPower
+    }
+    return sum
+}
 
 type Service struct {
     DB DB
@@ -110,3 +125,45 @@ func (s *Service) UpdatePlant(id uint, input UpdatePlantInput) error {
     plant.EnergyManagerID = input.EnergyManagerID
     return s.DB.UpdatePlant(plant)
 }
+
+func (s *Service) GetPlantAssets(id uint) ([]models.Asset, error) {
+    if _, err := s.DB.GetPlantById(id); err != nil {
+        return nil, err
+    }
+    return s.DB.GetAssetsByPlantId(id)
+}
+
+type CreateAssetInput struct {
+    Name     string `json:"name"      binding:"required"`
+    MaxPower uint   `json:"max_power" binding:"required"`
+    Type     string `json:"type"      binding:"required"`
+}
+
+func (s *Service) CreateAsset(id uint, input CreateAssetInput) error  {
+    plant, err := s.DB.GetPlantById(id)
+    if err != nil {
+        return err
+    }
+
+    existing_assets, err := s.DB.GetAssetsByPlantId(id)
+    if err != nil {
+        return err
+    }
+
+    if sumAssetPower(existing_assets) + input.MaxPower > plant.MaxPower {
+        return ErrAssetPower
+    }
+
+    if input.Type != "furnace" && input.Type != "compressor" && input.Type != "chiller" && input.Type != "rolling mill" {
+        return ErrAssetType
+    }
+
+    asset := models.Asset{
+        Name: input.Name,
+        MaxPower: input.MaxPower,
+        Type:  input.Type,
+        PlantID: id,
+    }
+    return s.DB.CreateAsset(&asset)
+}
+
