@@ -1,6 +1,6 @@
 version: "3.7"
 services:
-  test:
+  test-server:
     image: golang:1.18
     working_dir: /app
     volumes:
@@ -13,6 +13,20 @@ services:
     environment:
       API_PLANT_DSN: postgres://postgres:postgres@postgresql/metron
     entrypoint: go test /app/internal/server
+
+  test-plants:
+    image: golang:1.18
+    working_dir: /app
+    volumes:
+      - .:/app
+    depends_on: 
+      - postgresql
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      API_PLANT_DSN: postgres://postgres:postgres@postgresql/metron
+    entrypoint: go test /app/internal/plants
 
   postgresql:
     image: postgres:14-alpine

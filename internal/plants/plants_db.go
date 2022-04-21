@@ -160,8 +160,6 @@ func (db *PlantsDB) GetPlantsByEnergyManagerId(id uint) ([]models.Plant, error) 
     return plants, nil
 }
 
-
-    
 func (db *PlantsDB) GetAssetById(id uint) (*models.Asset, error) {
     var asset models.Asset
     result := db.gorm.Find(&asset, id)
