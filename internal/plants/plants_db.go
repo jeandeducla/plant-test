@@ -126,8 +126,8 @@ func (db *PlantsDB) DeletePlantById(id uint) error {
     return nil
 }
 
-func (db *PlantsDB) UpdatePlant(em *models.Plant) error {
-    result := db.gorm.Model(em).Updates(em)
+func (db *PlantsDB) UpdatePlant(plant *models.Plant) error {
+    result := db.gorm.Model(plant).Updates(plant)
     if result.Error != nil {
         return result.Error
     }

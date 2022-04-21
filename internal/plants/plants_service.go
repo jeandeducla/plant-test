@@ -17,7 +17,7 @@ type ServiceInterface interface {
     CreatePlant(input CreatePlantInput) error
     GetPlant(id uint) (*models.Plant, error)
     DeletePlant(id uint) error
-    UpdatePlant(id uint input UpdatePlantInput) error
+    UpdatePlant(id uint, input UpdatePlantInput) error
 }
 
 type Service struct {
