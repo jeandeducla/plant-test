@@ -15,7 +15,7 @@ func main() {
         panic(err)
     }
 
-    // pure ORM layer
+    // ORM layer
     plantsDB := plants.NewPlantsDB(db)
 
     // Business logic layer

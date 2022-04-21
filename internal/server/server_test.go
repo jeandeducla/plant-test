@@ -2,18 +2,21 @@ package server
 
 import (
 	"bytes"
-	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/suite"
+	"github.com/stretchr/testify/mock"
+
 	"github.com/jeandeducla/api-plant/internal/models"
 	"github.com/jeandeducla/api-plant/internal/plants"
-	"github.com/stretchr/testify/suite"
 )
 
 type MainTestSuite struct {
     suite.Suite
+    service *plants.Service
     server *Server
 }
 
@@ -21,9 +24,7 @@ func TestServer(t *testing.T) {
     suite.Run(t, new(MainTestSuite))
 }
 
-type ServiceMocker struct {
-    db map[uint]models.EnergyManager
-}
+var mockDb = &plants.DbMock{}
 
 var em1 = models.EnergyManager{
     Name: "Gerard",
@@ -37,92 +38,18 @@ var em2 = models.EnergyManager{
     Plants: nil,
 }
 
-var dbID uint = 3
+func (t *MainTestSuite) SetupSuite() {
+    service := plants.NewPlantsService(mockDb)
+    t.service = service
 
-
-func (sm *ServiceMocker) GetAllEnergyManagers() ([]models.EnergyManager, error) {
-    slice := make([]models.EnergyManager, 0, len(sm.db))
-    for _, em := range sm.db {
-        slice = append(slice, em)
-    }
-    return slice, nil
-}
-
-func (sm *ServiceMocker) CreateEnergyManager(input plants.CreateEnergyManagerInput) error {
-    em := models.EnergyManager{
-        Name: input.Name,
-        Surname: input.Surname,
-    }
-    sm.db[dbID] = em
-    dbID++
-    return nil
-}
-
-func (sm *ServiceMocker) GetEnergyManager(id uint) (*models.EnergyManager, error) {
-    em, ok := sm.db[id]
-    if !ok {
-        return nil, plants.ErrEmptyResult
-    }
-    return &em, nil
-}
-
-func (sm *ServiceMocker) DeleteEnergyManager(id uint) error {
-    _, ok := sm.db[id]
-    if !ok {
-        return plants.ErrEmptyResult
-    }
-    delete(sm.db, id)
-    return nil
-}
-
-func (sm *ServiceMocker) UpdateEnergyManager(id uint, input plants.UpdateEnergyManagerInput) error {
-    em, ok := sm.db[id]
-    if !ok {
-        return plants.ErrEmptyResult
-    }
-    em.Name = input.Name
-    em.Surname = input.Surname
-    sm.db[id] = em
-    return nil
-}
-
-func (sm *ServiceMocker) GetEnergyManagerPlants(id uint) ([]models.Plant, error) {
-    return nil, nil
-}
-
-
-func (sm *ServiceMocker) GetAllPlants() ([]models.Plant, error) {
-    return nil, nil
-}
-
-func (sm *ServiceMocker) CreatePlant(input plants.CreatePlantInput) error {
-    return nil
-}
-
-func (sm *ServiceMocker) GetPlant(id uint) (*models.Plant, error) {
-    return nil, nil
-}
-
-func (sm *ServiceMocker) DeletePlant(id uint) error {
-    return nil
-}
-
-func (sm *ServiceMocker) UpdatePlant(id uint, input plants.UpdatePlantInput) error {
-    return nil
-}
-
-
-func (t *MainTestSuite) SetupTest() {
-    // re-initialize mock db
-    server, err := NewServer(&ServiceMocker{db: map[uint]models.EnergyManager{
-        1: em1,
-        2: em2,
-    }})
+    server, err := NewServer(service)
     t.Require().NoError(err)
     t.server = server
 }
 
 func (t *MainTestSuite) TestGetAllEnergyManagers() {
+    mockDb.On("GetAllEnergyManagers").Return([]models.EnergyManager{em1, em2}, nil)
+
     w := httptest.NewRecorder()
     req, _ := http.NewRequest("GET", "/ems", nil)
     t.server.Router().ServeHTTP(w, req)
@@ -130,6 +57,8 @@ func (t *MainTestSuite) TestGetAllEnergyManagers() {
 }
 
 func (t *MainTestSuite) TestPostEnergyManager() {
+    mockDb.On("CreateEnergyManager", mock.Anything).Return(nil)
+
     // empty body
     w := httptest.NewRecorder()
     req, _ := http.NewRequest("POST", "/ems", nil)
@@ -146,14 +75,6 @@ func (t *MainTestSuite) TestPostEnergyManager() {
     req, _ = http.NewRequest("POST", "/ems", bytes.NewReader(body))
     t.server.Router().ServeHTTP(w, req)
     t.Equal(400, w.Code)
-    // check it has not affected the DB
-    w = httptest.NewRecorder()
-    req, _ = http.NewRequest("GET", "/ems", nil)
-    t.server.Router().ServeHTTP(w, req)
-    t.Equal(200, w.Code)
-    res := []models.EnergyManager{}
-    _ = json.Unmarshal(w.Body.Bytes(), &res)
-    t.Equal(2, len(res))
 
     // body is correct
     body = []byte(`
@@ -166,14 +87,6 @@ func (t *MainTestSuite) TestPostEnergyManager() {
     req, _ = http.NewRequest("POST", "/ems", bytes.NewReader(body))
     t.server.Router().ServeHTTP(w, req)
     t.Equal(200, w.Code)
-    // check DB has changed
-    w = httptest.NewRecorder()
-    req, _ = http.NewRequest("GET", "/ems", nil)
-    t.server.Router().ServeHTTP(w, req)
-    t.Equal(200, w.Code)
-    res = []models.EnergyManager{}
-    _ = json.Unmarshal(w.Body.Bytes(), &res)
-    t.Equal(3, len(res))
 
     // body has more fields than expected
     body = []byte(`
@@ -187,19 +100,14 @@ func (t *MainTestSuite) TestPostEnergyManager() {
     req, _ = http.NewRequest("POST", "/ems", bytes.NewReader(body))
     t.server.Router().ServeHTTP(w, req)
     t.Equal(200, w.Code)
-    // check DB has changed
-    w = httptest.NewRecorder()
-    req, _ = http.NewRequest("GET", "/ems", nil)
-    t.server.Router().ServeHTTP(w, req)
-    t.Equal(200, w.Code)
-    res = []models.EnergyManager{}
-    _ = json.Unmarshal(w.Body.Bytes(), &res)
-    t.Equal(4, len(res))
-
-    // TODO: test 500
 }
 
 func (t *MainTestSuite) TestGetEnergyManager() {
+    mockDb.On("GetEnergyManagerById", uint(1)).Return(&em1, nil)
+    mockDb.On("GetEnergyManagerById", uint(2)).Return(&em2, nil)
+    mockDb.On("GetEnergyManagerById", uint(1234)).Return(&models.EnergyManager{}, plants.ErrEmptyResult)
+    mockDb.On("GetEnergyManagerById", uint(42)).Return(&models.EnergyManager{}, errors.New("DB error"))
+
     // id is not parsable to uint
     w := httptest.NewRecorder()
     req, _ := http.NewRequest("GET", "/ems/hjki", nil)
@@ -230,10 +138,17 @@ func (t *MainTestSuite) TestGetEnergyManager() {
     t.server.Router().ServeHTTP(w, req)
     t.Equal(404, w.Code)
 
-    // TODO: test 500
+    // test 500
+    w = httptest.NewRecorder()
+    req, _ = http.NewRequest("GET", "/ems/42", nil)
+    t.server.Router().ServeHTTP(w, req)
+    t.Equal(500, w.Code)
 }
 
 func (t *MainTestSuite) TestDeleteEnergyManager() {
+    mockDb.On("DeleteEnergyManagerById", uint(1)).Return(nil)
+    mockDb.On("DeleteEnergyManagerById", uint(4)).Return(plants.ErrEmptyResult)
+
     // id is not parsable to uint
     w := httptest.NewRecorder()
     req, _ := http.NewRequest("DELETE", "/ems/jemangedupoulet", nil)
@@ -245,37 +160,19 @@ func (t *MainTestSuite) TestDeleteEnergyManager() {
     req, _ = http.NewRequest("DELETE", "/ems/4", nil)
     t.server.Router().ServeHTTP(w, req)
     t.Equal(404, w.Code)
-    // check it has not affected the DB
-    w = httptest.NewRecorder()
-    req, _ = http.NewRequest("GET", "/ems", nil)
-    t.server.Router().ServeHTTP(w, req)
-    t.Equal(200, w.Code)
-    res := []models.EnergyManager{}
-    _ = json.Unmarshal(w.Body.Bytes(), &res)
-    t.Equal(2, len(res))
 
     // id does exist
     w = httptest.NewRecorder()
     req, _ = http.NewRequest("DELETE", "/ems/1", nil)
     t.server.Router().ServeHTTP(w, req)
     t.Equal(200, w.Code)
-    // check DB has changed
-    w = httptest.NewRecorder()
-    req, _ = http.NewRequest("GET", "/ems", nil)
-    t.server.Router().ServeHTTP(w, req)
-    t.Equal(200, w.Code)
-    res = []models.EnergyManager{}
-    _ = json.Unmarshal(w.Body.Bytes(), &res)
-    t.Equal(1, len(res))
-    w = httptest.NewRecorder()
-    req, _ = http.NewRequest("GET", "/ems/1", nil)
-    t.server.Router().ServeHTTP(w, req)
-    t.Equal(404, w.Code)
-
-    // TODO: test 500
 }
 
 func (t *MainTestSuite) TestPutEnergyManager() {
+    mockDb.On("GetEnergyManagerById", uint(1)).Return(&em1, nil)
+    mockDb.On("UpdateEnergyManager", mock.Anything).Return(nil)
+    mockDb.On("GetEnergyManagerById", uint(4)).Return(&models.EnergyManager{}, plants.ErrEmptyResult)
+
     // id is not parsable to uint
     w := httptest.NewRecorder()
     req, _ := http.NewRequest("PUT", "/ems/^jlliu", nil)
@@ -293,18 +190,6 @@ func (t *MainTestSuite) TestPutEnergyManager() {
     req, _ = http.NewRequest("PUT", "/ems/4", bytes.NewReader(body))
     t.server.Router().ServeHTTP(w, req)
     t.Equal(404, w.Code)
-    // check it has not affected the DB
-    w = httptest.NewRecorder()
-    req, _ = http.NewRequest("GET", "/ems", nil)
-    t.server.Router().ServeHTTP(w, req)
-    t.Equal(200, w.Code)
-    res := []models.EnergyManager{}
-    _ = json.Unmarshal(w.Body.Bytes(), &res)
-    t.Equal(2, len(res))
-    t.Equal(em1.Name, res[0].Name)
-    t.Equal(em1.Surname, res[0].Surname)
-    t.Equal(em2.Name, res[1].Name)
-    t.Equal(em2.Surname, res[1].Surname)
 
     // request body is empty
     w = httptest.NewRecorder()
@@ -336,15 +221,4 @@ func (t *MainTestSuite) TestPutEnergyManager() {
     req, _ = http.NewRequest("PUT", "/ems/1", bytes.NewReader(body))
     t.server.Router().ServeHTTP(w, req)
     t.Equal(200, w.Code)
-    // check it has affected the DB
-    w = httptest.NewRecorder()
-    req, _ = http.NewRequest("GET", "/ems/1", nil)
-    t.server.Router().ServeHTTP(w, req)
-    t.Equal(200, w.Code)
-    result := models.EnergyManager{}
-    _ = json.Unmarshal(w.Body.Bytes(), &result)
-    t.Equal("coucou", result.Name)
-    t.Equal("salut", result.Surname)
-
-    // TODO: test 500
 }

@@ -11,6 +11,22 @@ var (
     ErrEmptyResult = errors.New("Empty result")
 )
 
+type DB interface {
+    GetAllEnergyManagers() ([]models.EnergyManager, error)
+    CreateEnergyManager(em *models.EnergyManager) error
+    GetEnergyManagerById(id uint) (*models.EnergyManager, error)
+    DeleteEnergyManagerById(id uint) error
+    UpdateEnergyManager(em *models.EnergyManager) error
+
+    GetAllPlants() ([]models.Plant, error)
+    CreatePlant(plant *models.Plant) error
+    GetPlantById(id uint) (*models.Plant, error)
+    DeletePlantById(id uint) error
+    UpdatePlant(plant *models.Plant) error
+
+    GetPlantsByEnergyManagerId(id uint) ([]models.Plant, error)
+}
+
 type PlantsDB struct  {
     gorm *gorm.DB
 }
@@ -91,18 +107,6 @@ func (db *PlantsDB) CreatePlant(plant *models.Plant) error {
     return nil
 }
 
-func (db *PlantsDB) GetPlantsByEnergyManagerId(id uint) ([]models.Plant, error) {
-    var plants []models.Plant
-    result := db.gorm.Where("energy_manager_id = ?", id).Find(&plants)
-    if result.Error != nil {
-        return nil, result.Error
-    }
-    if result.RowsAffected == 0 {
-        return nil, ErrEmptyResult
-    }
-    return plants, nil
-}
-
 func (db *PlantsDB) GetPlantById(id uint) (*models.Plant, error) {
     var plant models.Plant
     result := db.gorm.Find(&plant, id)
@@ -137,3 +141,14 @@ func (db *PlantsDB) UpdatePlant(plant *models.Plant) error {
     return nil
 }
 
+func (db *PlantsDB) GetPlantsByEnergyManagerId(id uint) ([]models.Plant, error) {
+    var plants []models.Plant
+    result := db.gorm.Where("energy_manager_id = ?", id).Find(&plants)
+    if result.Error != nil {
+        return nil, result.Error
+    }
+    if result.RowsAffected == 0 {
+        return nil, ErrEmptyResult
+    }
+    return plants, nil
+}

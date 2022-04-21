@@ -4,27 +4,11 @@ import (
 	"github.com/jeandeducla/api-plant/internal/models"
 )
 
-type ServiceInterface interface {
-    GetAllEnergyManagers() ([]models.EnergyManager, error)
-    CreateEnergyManager(input CreateEnergyManagerInput) error
-    GetEnergyManager(id uint) (*models.EnergyManager, error)
-    DeleteEnergyManager(id uint) error
-    UpdateEnergyManager(id uint, input UpdateEnergyManagerInput) error
-
-    GetEnergyManagerPlants(id uint) ([]models.Plant, error)
-
-    GetAllPlants() ([]models.Plant, error)
-    CreatePlant(input CreatePlantInput) error
-    GetPlant(id uint) (*models.Plant, error)
-    DeletePlant(id uint) error
-    UpdatePlant(id uint, input UpdatePlantInput) error
-}
-
 type Service struct {
-    DB *PlantsDB
+    DB DB
 }
 
-func NewPlantsService(plantsDB *PlantsDB) *Service {
+func NewPlantsService(plantsDB DB) *Service {
     return &Service{DB: plantsDB}
 }
 
