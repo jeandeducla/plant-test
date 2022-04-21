@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +15,7 @@ func (s *Server) handleGetEnergyManagers(ctx *gin.Context) {
         ctx.AbortWithStatus(500)
         return
     }
+    fmt.Println(res)
     ctx.JSON(http.StatusOK, res)
 }
 

@@ -9,6 +9,7 @@ import (
 var (
     ErrAssetPower = errors.New("Asset MaxPower is too big for the plant")
     ErrAssetType = errors.New("Asset Type must be one of 'furnace', 'compressor', 'chiller' or 'rolling mill'")
+    ErrNewEmDoesNotExist = errors.New("The EM you want to change to does not exist")
 )
 
 func sumAssetPower(assets []models.Asset) uint {
@@ -135,7 +136,7 @@ func (s *Service) UpdatePlant(id uint, input UpdatePlantInput) error {
     // checking em exists
     _, err = s.DB.GetEnergyManagerById(input.EnergyManagerID)
     if err != nil {
-        return err
+        return ErrNewEmDoesNotExist
     }
     plant.EnergyManagerID = input.EnergyManagerID
 

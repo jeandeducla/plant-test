@@ -1,6 +1,7 @@
 package server
 
 import (
+    "errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -38,9 +39,17 @@ func (s *Server) handlePostAsset(ctx *gin.Context) {
     }
 
     err = s.plantsService.CreateAsset(id, input)
-    status, err := matchError(err)
-    if err != nil {
-        ctx.AbortWithStatus(status)
+    if errors.Is(err, plants.ErrEmptyResult) {
+        ctx.AbortWithStatus(404)
+        return
+    } else if errors.Is(err, plants.ErrAssetType) {
+        ctx.AbortWithStatus(400)
+        return
+    } else if errors.Is(err, plants.ErrAssetPower) {
+        ctx.AbortWithStatus(400)
+        return
+    } else if err != nil {
+        ctx.AbortWithStatus(500)
         return
     }
     ctx.String(http.StatusOK, "")
@@ -107,9 +116,17 @@ func (s *Server) handlePutPlantAsset(ctx *gin.Context) {
     }
 
     err = s.plantsService.UpdatePlantAsset(plant_id, asset_id, input)
-    status, err := matchError(err)
-    if err != nil {
-        ctx.AbortWithStatus(status)
+    if errors.Is(err, plants.ErrEmptyResult) {
+        ctx.AbortWithStatus(404)
+        return
+    } else if errors.Is(err, plants.ErrAssetType) {
+        ctx.AbortWithStatus(400)
+        return
+    } else if errors.Is(err, plants.ErrAssetPower) {
+        ctx.AbortWithStatus(400)
+        return
+    } else if err != nil {
+        ctx.AbortWithStatus(500)
         return
     }
     ctx.String(http.StatusOK, "")

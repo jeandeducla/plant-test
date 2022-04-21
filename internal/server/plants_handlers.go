@@ -1,6 +1,7 @@
 package server
 
 import (
+    "errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -25,9 +26,11 @@ func (s *Server) handlePostPlant(ctx *gin.Context) {
     }
 
     err := s.plantsService.CreatePlant(input)
-    status, err := matchError(err)
-    if err != nil {
-        ctx.AbortWithStatus(status)
+    if errors.Is(err, plants.ErrEmptyResult) {
+        ctx.AbortWithStatus(400)
+        return
+    } else if err != nil {
+        ctx.AbortWithStatus(500)
         return
     }
     ctx.String(http.StatusOK, "")
@@ -79,9 +82,14 @@ func (s *Server) handlePutPlant(ctx *gin.Context) {
     }
 
     err = s.plantsService.UpdatePlant(id, input)
-    status, err := matchError(err)
-    if err != nil {
-        ctx.AbortWithStatus(status)
+    if errors.Is(err, plants.ErrEmptyResult) {
+        ctx.AbortWithStatus(404)
+        return
+    } else if errors.Is(err, plants.ErrNewEmDoesNotExist) {
+        ctx.AbortWithStatus(400)
+        return
+    } else if err != nil {
+        ctx.AbortWithStatus(500)
         return
     }
     ctx.String(http.StatusOK, "")
