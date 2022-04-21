@@ -203,7 +203,6 @@ func (s *Service) DeletePlantAsset(plant_id uint, asset_id uint) error {
         return err
     }
     return s.DB.DeleteAssetById(asset_id)
-
 }
 
 type UpdateAssetInput struct {

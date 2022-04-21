@@ -11,7 +11,7 @@ func init() {
     viper.AutomaticEnv()
 
     viper.SetEnvPrefix("API_PLANT")
-    viper.SetDefault("dsn", "postgres://postgres:postgres@postgresql/plants")
+    viper.SetDefault("dsn", "postgres://postgres:postgres@postgresql/metron")
 }
 
 func NewConfig() *Config {
