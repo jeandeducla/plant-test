@@ -8,6 +8,6 @@ type Plant struct {
     Address         string
     MaxPower        uint
     EnergyManagerID uint
-    Assets          []Asset
+    Assets          []Asset `gorm:"constraint:OnDelete:CASCADE;"`
 }
 

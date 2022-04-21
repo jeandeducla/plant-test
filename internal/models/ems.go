@@ -6,5 +6,5 @@ type EnergyManager struct {
     gorm.Model
     Name    string
     Surname string
-    Plants  []Plant
+    Plants  []Plant `gorm:"constraint:OnDelete:SET NULL;"`
 }

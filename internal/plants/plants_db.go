@@ -26,6 +26,7 @@ type DB interface {
 
     GetPlantsByEnergyManagerId(id uint) ([]models.Plant, error)
 
+    GetAssetById(id uint) (*models.Asset, error)
     GetAssetsByPlantId(id uint) ([]models.Asset, error)
     CreateAsset(asset *models.Asset) error
     GetAssetByPlantId(plant_id uint, asset_id uint) (*models.Asset, error)
@@ -157,6 +158,20 @@ func (db *PlantsDB) GetPlantsByEnergyManagerId(id uint) ([]models.Plant, error) 
         return plants, ErrEmptyResult
     }
     return plants, nil
+}
+
+
+    
+func (db *PlantsDB) GetAssetById(id uint) (*models.Asset, error) {
+    var asset models.Asset
+    result := db.gorm.Find(&asset, id)
+    if result.Error != nil {
+        return nil, result.Error
+    }
+    if result.RowsAffected == 0 {
+        return nil, ErrEmptyResult
+    }
+    return &asset, nil
 }
 
 func (db *PlantsDB) GetAssetsByPlantId(id uint) ([]models.Asset, error) {

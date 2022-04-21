@@ -64,6 +64,44 @@ func (t *MainTestSuite) TestCreateEnergyManager() {
     t.Equal(len(ems), 2)
 }
 
+func (t *MainTestSuite) TestDeleteEnergyManager() {
+    // should not be able to delete a em that does not exist
+    err := t.service.DeleteEnergyManager(uint(1))
+    t.Require().Error(err)
+
+    // should be able to delete one that exists
+    err = t.service.CreateEnergyManager(CreateEnergyManagerInput{
+        Name: "Gerard",
+        Surname: "Depardieu",
+    })
+    t.Require().NoError(err)
+    err = t.service.DeleteEnergyManager(uint(1))
+    t.Require().NoError(err)
+    em, err := t.service.GetEnergyManager(uint(1))
+    t.Require().Error(err)
+    t.Nil(em)
+
+    // Deleting a em with plants attached to him should not delete the plants
+    err = t.service.CreateEnergyManager(CreateEnergyManagerInput{
+        Name: "Gerard",
+        Surname: "Depardieu",
+    })
+    err = t.service.CreatePlant(CreatePlantInput{
+        Name: "plant1",
+        Address: "17 rue truc",
+        MaxPower: 100,
+        EnergyManagerID: 2,
+    })
+    t.Require().NoError(err)
+    err = t.service.DeleteEnergyManager(uint(2))
+    t.Require().NoError(err)
+    plant, err := t.service.GetAllPlants()
+    t.Require().NoError(err)
+    t.NotNil(plant)
+    t.Equal(len(plant), 1)
+    t.Equal(plant[0].Name, "plant1")
+}
+
 func (t *MainTestSuite) TestUpdateEnergyManager() {
     // Updating an em that does not exist should return an error
     err := t.service.UpdateEnergyManager(uint(123), UpdateEnergyManagerInput{"Jacques", "Chirac"})
@@ -214,6 +252,38 @@ func (t *MainTestSuite) TestDeletePlant() {
     plants, err := t.service.GetEnergyManagerPlants(uint(1))
     t.Require().NoError(err)
     t.Equal(len(plants), 0)
+
+    // Deleting a plant should delete all its assets
+    err = t.service.CreatePlant(CreatePlantInput{
+        Name: "plant1",
+        Address: "17 rue truc",
+        MaxPower: 100,
+        EnergyManagerID: 1,
+    })
+    t.Require().NoError(err)
+    err = t.service.CreateAsset(uint(2), CreateAssetInput{
+        Name: "asset1",
+        MaxPower: 10,
+        Type: "furnace",
+    })
+    t.Require().NoError(err)
+    err = t.service.CreateAsset(uint(2), CreateAssetInput{
+        Name: "asset2",
+        MaxPower: 10,
+        Type: "furnace",
+    })
+    t.Require().NoError(err)
+    err = t.service.DeletePlant(uint(2))
+    t.Require().NoError(err)
+    asset, err := t.service.DB.GetAssetById(uint(1))
+    t.Require().Error(err)
+    t.Nil(asset)
+    asset, err = t.service.DB.GetAssetById(uint(2))
+    t.Require().Error(err)
+    t.Nil(asset)
+    plant, err = t.service.GetPlant(uint(1))
+    t.Require().Error(err)
+    t.Nil(plant)
 }
 
 func (t *MainTestSuite) TestUpdatePlant() {
