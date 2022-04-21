@@ -28,6 +28,9 @@ type DB interface {
 
     GetAssetsByPlantId(id uint) ([]models.Asset, error)
     CreateAsset(asset *models.Asset) error
+    GetAssetByPlantId(plant_id uint, asset_id uint) (*models.Asset, error)
+    DeleteAssetById(asset_id uint) error
+    UpdateAsset(asset *models.Asset) error
 }
 
 type PlantsDB struct  {
@@ -151,7 +154,7 @@ func (db *PlantsDB) GetPlantsByEnergyManagerId(id uint) ([]models.Plant, error) 
         return nil, result.Error
     }
     if result.RowsAffected == 0 {
-        return nil, ErrEmptyResult
+        return plants, ErrEmptyResult
     }
     return plants, nil
 }
@@ -160,16 +163,50 @@ func (db *PlantsDB) GetAssetsByPlantId(id uint) ([]models.Asset, error) {
     var assets []models.Asset
     result := db.gorm.Where("plant_id = ?", id).Find(&assets)
     if result.Error != nil {
-        return nil, result.Error
+        return assets, result.Error
     }
     if result.RowsAffected == 0 {
-        return nil, ErrEmptyResult
+        return assets, ErrEmptyResult
     }
     return assets, nil
 }
 
 func (db *PlantsDB) CreateAsset(asset *models.Asset) error {
     result := db.gorm.Create(asset)
+    if result.Error != nil {
+        return result.Error
+    }
+    if result.RowsAffected == 0 {
+        return ErrEmptyResult
+    }
+    return nil
+}
+
+func (db *PlantsDB) GetAssetByPlantId(plant_id uint, asset_id uint) (*models.Asset, error) {
+    var asset models.Asset
+    result := db.gorm.Where("plant_id = ?", plant_id).Find(&asset, asset_id)
+    if result.Error != nil {
+        return nil, result.Error
+    }
+    if result.RowsAffected == 0 {
+        return nil, ErrEmptyResult
+    }
+    return &asset, nil
+}
+
+func (db *PlantsDB) DeleteAssetById(asset_id uint) error {
+    result := db.gorm.Delete(&models.Asset{}, asset_id)
+    if result.Error != nil {
+        return result.Error
+    }
+    if result.RowsAffected == 0 {
+        return ErrEmptyResult
+    }
+    return nil
+}
+
+func (db *PlantsDB) UpdateAsset(asset *models.Asset) error {
+    result := db.gorm.Model(asset).Updates(asset)
     if result.Error != nil {
         return result.Error
     }

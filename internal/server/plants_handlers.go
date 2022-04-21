@@ -34,7 +34,7 @@ func (s *Server) handlePostPlant(ctx *gin.Context) {
 }
 
 func (s *Server) handleGetPlant(ctx *gin.Context) {
-    id, err := parseId(ctx)
+    id, err := parseId(ctx, "id")
     if err != nil {
         ctx.AbortWithStatus(404)
         return
@@ -50,7 +50,7 @@ func (s *Server) handleGetPlant(ctx *gin.Context) {
 }
 
 func (s *Server) handleDeletePlant(ctx *gin.Context) {
-    id, err := parseId(ctx)
+    id, err := parseId(ctx, "id")
     if err != nil {
         ctx.AbortWithStatus(404)
         return
@@ -66,7 +66,7 @@ func (s *Server) handleDeletePlant(ctx *gin.Context) {
 }
 
 func (s *Server) handlePutPlant(ctx *gin.Context) {
-    id, err := parseId(ctx)
+    id, err := parseId(ctx, "id")
     if err != nil {
         ctx.AbortWithStatus(404)
         return

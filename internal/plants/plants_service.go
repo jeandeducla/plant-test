@@ -71,7 +71,11 @@ func (s *Service) GetEnergyManagerPlants(id uint) ([]models.Plant, error) {
     if _, err := s.DB.GetEnergyManagerById(id); err != nil {
         return nil, err
     }
-    return s.DB.GetPlantsByEnergyManagerId(id)
+    plants, err := s.DB.GetPlantsByEnergyManagerId(id)
+    if err != nil && err != ErrEmptyResult {
+        return nil, err
+    }
+    return plants, nil
 }
 
 func (s *Service) GetAllPlants() ([]models.Plant, error) {
@@ -117,12 +121,26 @@ func (s *Service) UpdatePlant(id uint, input UpdatePlantInput) error {
     if err != nil {
         return err
     }
+
+    // checking new max power is ok with existing assets
+    existing_assets, err := s.DB.GetAssetsByPlantId(id)
+    if err != nil && err != ErrEmptyResult {
+        return err
+    }
+    if sumAssetPower(existing_assets) > input.MaxPower {
+        return ErrAssetPower
+    }
+    plant.MaxPower = input.MaxPower
+
+    // checking em exists
+    _, err = s.DB.GetEnergyManagerById(input.EnergyManagerID)
+    if err != nil {
+        return err
+    }
+    plant.EnergyManagerID = input.EnergyManagerID
+
     plant.Name = input.Name
     plant.Address = input.Address
-    // TODO: validate that the sum of asset power still is lower than the new MaxPower, otherwise error
-    plant.MaxPower = input.MaxPower
-    // TODO: validate that the new EnergyManagerID is valid? (maybe we want to allow to set it to a null value, like detaching a plant from a EM?)
-    plant.EnergyManagerID = input.EnergyManagerID
     return s.DB.UpdatePlant(plant)
 }
 
@@ -130,7 +148,11 @@ func (s *Service) GetPlantAssets(id uint) ([]models.Asset, error) {
     if _, err := s.DB.GetPlantById(id); err != nil {
         return nil, err
     }
-    return s.DB.GetAssetsByPlantId(id)
+    assests, err := s.DB.GetAssetsByPlantId(id) 
+    if err != nil && err != ErrEmptyResult {
+        return nil, err
+    }
+    return assests, nil
 }
 
 type CreateAssetInput struct {
@@ -140,22 +162,22 @@ type CreateAssetInput struct {
 }
 
 func (s *Service) CreateAsset(id uint, input CreateAssetInput) error  {
+    if input.Type != "furnace" && input.Type != "compressor" && input.Type != "chiller" && input.Type != "rolling mill" {
+        return ErrAssetType
+    }
+
     plant, err := s.DB.GetPlantById(id)
     if err != nil {
         return err
     }
 
     existing_assets, err := s.DB.GetAssetsByPlantId(id)
-    if err != nil {
+    if err != nil && err != ErrEmptyResult {
         return err
     }
 
     if sumAssetPower(existing_assets) + input.MaxPower > plant.MaxPower {
         return ErrAssetPower
-    }
-
-    if input.Type != "furnace" && input.Type != "compressor" && input.Type != "chiller" && input.Type != "rolling mill" {
-        return ErrAssetType
     }
 
     asset := models.Asset{
@@ -167,3 +189,55 @@ func (s *Service) CreateAsset(id uint, input CreateAssetInput) error  {
     return s.DB.CreateAsset(&asset)
 }
 
+func (s *Service) GetPlantAsset(plant_id uint, asset_id uint) (*models.Asset, error) {
+    _, err := s.DB.GetPlantById(plant_id)
+    if err != nil {
+        return nil, err
+    }
+    return s.DB.GetAssetByPlantId(plant_id, asset_id)
+}
+
+func (s *Service) DeletePlantAsset(plant_id uint, asset_id uint) error {
+    _, err := s.GetPlantAsset(plant_id, asset_id)
+    if err != nil {
+        return err
+    }
+    return s.DB.DeleteAssetById(asset_id)
+
+}
+
+type UpdateAssetInput struct {
+    Name     string `json:"name"      binding:"required"`
+    MaxPower uint   `json:"max_power" binding:"required"`
+    Type     string `json:"type"      binding:"required"`
+}
+
+func (s *Service) UpdatePlantAsset(plant_id uint, asset_id uint, input UpdateAssetInput) error {
+    if input.Type != "furnace" && input.Type != "compressor" && input.Type != "chiller" && input.Type != "rolling mill" {
+        return ErrAssetType
+    }
+
+    // checks the asset belongs to the plant
+    asset_to_change, err := s.GetPlantAsset(plant_id, asset_id)
+    if err != nil {
+        return err
+    }
+
+    // business rule enforcement
+    plant, err := s.DB.GetPlantById(plant_id)
+    if err != nil {
+        return err
+    }
+    existing_assets, err := s.DB.GetAssetsByPlantId(plant_id)
+    if err != nil && err != ErrEmptyResult {
+        return err
+    }
+    if sumAssetPower(existing_assets) - asset_to_change.MaxPower + input.MaxPower > plant.MaxPower {
+        return ErrAssetPower
+    }
+
+    asset_to_change.Name = input.Name
+    asset_to_change.MaxPower = input.MaxPower
+    asset_to_change.Type = input.Type
+    return s.DB.UpdateAsset(asset_to_change)
+}

@@ -38,12 +38,15 @@ func (s *Server) Router() *gin.Engine {
 
     router.GET("/plants/:id/assets", s.handleGetPlantAssets)
     router.POST("/plants/:id/assets", s.handlePostAsset)
+    router.GET("/plants/:id/assets/:asset_id", s.handleGetPlantAsset)
+    router.DELETE("/plants/:id/assets/:asset_id", s.handleDeletePlantAsset)
+    router.PUT("/plants/:id/assets/:asset_id", s.handlePutPlantAsset)
 
     return router
 }
 
-func parseId(ctx *gin.Context) (uint, error) {
-    param := ctx.Param("id")
+func parseId(ctx *gin.Context, idName string) (uint, error) {
+    param := ctx.Param(idName)
     id, err := strconv.ParseUint(param, 0, 64)
     return uint(id), err
 }

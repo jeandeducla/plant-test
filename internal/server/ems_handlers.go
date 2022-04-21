@@ -18,7 +18,7 @@ func (s *Server) handleGetEnergyManagers(ctx *gin.Context) {
 }
 
 func (s *Server) handleGetEnergyManager(ctx *gin.Context) {
-    id, err := parseId(ctx)
+    id, err := parseId(ctx, "id")
     if err != nil {
         ctx.AbortWithStatus(404)
         return
@@ -34,7 +34,7 @@ func (s *Server) handleGetEnergyManager(ctx *gin.Context) {
 }
 
 func (s *Server) handleDeleteEnergyManager(ctx *gin.Context) {
-    id, err := parseId(ctx)
+    id, err := parseId(ctx, "id")
     if err != nil {
         ctx.AbortWithStatus(404)
         return
@@ -66,7 +66,7 @@ func (s *Server) handlePostEnergyManager(ctx *gin.Context) {
 }
 
 func (s *Server) handlePutEnergyManager(ctx *gin.Context) {
-    id, err := parseId(ctx)
+    id, err := parseId(ctx, "id")
     if err != nil {
         ctx.AbortWithStatus(404)
         return
@@ -88,7 +88,7 @@ func (s *Server) handlePutEnergyManager(ctx *gin.Context) {
 }
 
 func (s *Server) handleGetEnergyManagerPlants(ctx *gin.Context) {
-    id, err := parseId(ctx)
+    id, err := parseId(ctx, "id")
     if err != nil {
         ctx.AbortWithStatus(404)
         return
@@ -103,18 +103,3 @@ func (s *Server) handleGetEnergyManagerPlants(ctx *gin.Context) {
     ctx.JSON(http.StatusOK, res)
 }
 
-func (s *Server) handleGetPlantAssets(ctx *gin.Context) {
-    id, err := parseId(ctx)
-    if err != nil {
-        ctx.AbortWithStatus(404)
-        return
-    }
-
-    res, err := s.plantsService.GetPlantAssets(id)
-    status, err := matchError(err)
-    if err != nil {
-        ctx.AbortWithStatus(status)
-        return
-    }
-    ctx.JSON(http.StatusOK, res)
-}
